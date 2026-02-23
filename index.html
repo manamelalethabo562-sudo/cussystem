@@ -78,6 +78,20 @@
         main { padding: 50px; width: 100%; animation: fadeIn 1s ease; margin: 0 auto; max-width: 1200px; }
         .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
         .greeting h1 { font-size: 32px; font-weight: 800; }
+
+        /* Sign Out Button */
+        .btn-signout {
+            background: #f1f3f5;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #d63031;
+            transition: var(--transition);
+        }
+        .btn-signout:hover { background: #ffe5e5; }
+
         .card {
             background: var(--white);
             padding: 30px;
@@ -207,7 +221,7 @@
             border-radius: 8px;
             padding: 16px;
             position: fixed;
-            z-index: 1000;
+            z-index: 3000;
             right: 30px;
             bottom: 30px;
             font-size: 14px;
@@ -286,6 +300,7 @@
                 <h1 id="welcomeUser">Welcome to AuraPOS</h1>
                 <p style="color: var(--muted-text);">Browse our menu and place your order.</p>
             </div>
+            <button id="signOutBtn" class="btn-signout" style="display: none;">Sign Out</button>
         </div>
         <div class="card">
             <h3>Our Menu</h3>
@@ -346,13 +361,56 @@
         let selectedPayment = '';
         let selectedCategory = '';
         let customerData = { name: '', cell: '' };
+        let logoutTimer;
 
-        // Handle Registration with Cell Validation
+        // Session persistence on load
+        window.addEventListener('load', () => {
+            const savedData = localStorage.getItem('auraCustomer');
+            if (savedData) {
+                customerData = JSON.parse(savedData);
+                enterKiosk();
+            }
+        });
+
+        // Activity Monitor: Resets timer on click/move/keypress
+        function resetInactivityTimer() {
+            clearTimeout(logoutTimer);
+            // Only start timer if user is logged in
+            if (customerData.name) {
+                logoutTimer = setTimeout(signOut, 300000); // 300,000ms = 5 minutes
+            }
+        }
+
+        window.addEventListener('mousedown', resetInactivityTimer);
+        window.addEventListener('keypress', resetInactivityTimer);
+        window.addEventListener('touchstart', resetInactivityTimer);
+
+        function enterKiosk() {
+            document.getElementById('regModal').style.display = 'none';
+            document.getElementById('welcomeUser').innerText = `Hi, ${customerData.name}!`;
+            document.getElementById('signOutBtn').style.display = 'block';
+            resetInactivityTimer();
+        }
+
+        function signOut() {
+            localStorage.removeItem('auraCustomer');
+            customerData = { name: '', cell: '' };
+            cart = {};
+            updateCartDisplay();
+            document.getElementById('welcomeUser').innerText = 'Welcome to AuraPOS';
+            document.getElementById('signOutBtn').style.display = 'none';
+            document.getElementById('regModal').style.display = 'flex';
+            document.getElementById('custName').value = '';
+            document.getElementById('custCell').value = '';
+            showToast('Session ended due to inactivity.');
+        }
+
+        document.getElementById('signOutBtn').addEventListener('click', signOut);
+
+        // Handle Registration
         document.getElementById('startOrderBtn').addEventListener('click', () => {
             const name = document.getElementById('custName').value.trim();
             const cell = document.getElementById('custCell').value.trim();
-
-            // 10 digits starting with 0
             const cellRegex = /^0\d{9}$/;
 
             if (name === '' || cell === '') {
@@ -367,9 +425,11 @@
 
             customerData.name = name;
             customerData.cell = cell;
+            
+            // Save to localStorage for persistence
+            localStorage.setItem('auraCustomer', JSON.stringify(customerData));
 
-            document.getElementById('regModal').style.display = 'none';
-            document.getElementById('welcomeUser').innerText = `Hi, ${name}!`;
+            enterKiosk();
             document.getElementById('successMessage').innerText = `Hi ${name}, you can continue with your order!`;
             document.getElementById('successModal').style.display = 'flex';
         });
@@ -532,7 +592,6 @@
 
         function showResetButton() {
             const container = document.getElementById('modalButtons');
-            // Check if reset button already exists to prevent duplicates
             if(!document.getElementById('resetKioskBtn')) {
                 const resetBtn = document.createElement('button');
                 resetBtn.className = 'btn-pill';
@@ -546,19 +605,10 @@
         }
 
         function resetKiosk() {
-            // Reset Customer Data
-            customerData = { name: '', cell: '' };
-            document.getElementById('custName').value = '';
-            document.getElementById('custCell').value = '';
-            document.getElementById('welcomeUser').innerText = 'Welcome to AuraPOS';
-            
-            // Clear UI
+            signOut();
             document.getElementById('successModal').style.display = 'none';
             const resetBtn = document.getElementById('resetKioskBtn');
             if(resetBtn) resetBtn.remove();
-            
-            // Show Registration again
-            document.getElementById('regModal').style.display = 'flex';
         }
 
         document.getElementById('okSuccessBtn').addEventListener('click', () => {
