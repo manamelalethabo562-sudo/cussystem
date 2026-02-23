@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraPOS Kiosk | Customer Ordering</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-grad: linear-gradient(135deg, #FFD700 0%, #FFB800 100%);
+            --white: #ffffff;
+            --bg-light: #F7F9FC;
+            --dark-text: #1A1C1E;
+            --muted-text: #6C757D;
+            --card-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            --accent-color: #00B894;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg-light); color: var(--dark-text); display: flex; min-height: 100vh; overflow-x: hidden; flex-direction: column; }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px auto;
+            animation: fadeInDown 0.8s ease;
+            width: fit-content;
+        }
+        .logo-sq {
+            width: 45px;
+            height: 45px;
+            background: var(--primary-grad);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 22px;
+            color: #000;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+        .logo-text { font-size: 24px; font-weight: 800; letter-spacing: -1px; }
+        main { padding: 50px; width: 100%; animation: fadeIn 1s ease; margin: 0 auto; max-width: 1200px; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .greeting h1 { font-size: 32px; font-weight: 800; }
+        .card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            transition: var(--transition);
+            margin-bottom: 30px;
+        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
+        h3 { font-size: 18px; margin-bottom: 25px; font-weight: 700; opacity: 0.9; }
+        h4 { font-size: 16px; margin: 20px 0 10px; }
+        .item-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 25px;
+        }
+        .item-card {
+            background: var(--white);
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: var(--transition);
+            overflow: hidden;
+            position: relative;
+        }
+        .item-card:hover { transform: translateY(-8px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }
+        .item-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
+        .item-card:hover img { transform: scale(1.05); }
+        .item-card h5 { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+        .item-card p { font-size: 14px; font-weight: 600; margin-bottom: 15px; color: var(--accent-color); }
+        .discount-text { font-size: 12px; text-decoration: line-through; color: var(--muted-text); }
+        .btn-sell {
+            background: var(--primary-grad);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(255, 215, 0, 0.2);
+        }
+        .btn-sell:hover { transform: scale(1.05); box-shadow: 0 6px 15px rgba(255, 215, 0, 0.3); }
+        .btn-pill {
+            position: relative;
+            overflow: hidden;
+            background: var(--primary-grad);
+            border: none;
+            padding: 16px 30px;
+            border-radius: 50px;
+            color: #000;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            width: 100%;
+            transition: var(--transition);
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-pill:hover { transform: scale(1.02); box-shadow: 0 15px 25px rgba(255, 215, 0, 0.3); }
+        .btn-pill::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(60deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-150%) rotate(45deg); }
+            100% { transform: translateX(150%) rotate(45deg); }
+        }
+        ul#cartList { list-style: none; margin-bottom: 20px; }
+        ul#cartList li {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #F1F3F5;
+            transition: background 0.2s ease;
+        }
+        ul#cartList li:hover { background: #f8f9fa; border-radius: 12px; }
+        ul#cartList li img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 15px;
+        }
+        ul#cartList li .item-info { flex: 1; }
+        ul#cartList li .item-info strong { font-size: 15px; }
+        ul#cartList li .item-info span { display: block; color: var(--muted-text); font-size: 13px; }
+        .plus, .minus, .remove {
+            background: #ddd;
+            border: none;
+            padding: 5px 10px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 50%;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .plus:hover, .minus:hover, .remove:hover { background: #ccc; }
+        .remove { background: #FFE5E5; color: #D63031; }
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1000;
+            right: 30px;
+            bottom: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <div class="logo-sq">A</div>
+        <div class="logo-text">AuraPOS Kiosk</div>
+    </div>
+    <main>
+        <div class="header-flex">
+            <div class="greeting">
+                <h1>Welcome to AuraPOS</h1>
+                <p style="color: var(--muted-text);">Browse our menu and place your order like at KFC or McDonald's.</p>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Our Menu</h3>
+            <div id="menuContainer"></div>
+        </div>
+        <div class="card">
+            <h3>Your Cart</h3>
+            <ul id="cartList"></ul>
+            <p style="font-weight: 700; font-size: 18px;">Total: R <span id="cartTotal">0.00</span></p>
+            <button class="btn-pill" id="checkoutBtn">Checkout & Pay</button>
+        </div>
+    </main>
+    <div id="toast">Notification</div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, push, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAxBT0oESoL62oz_x_Z8cMtdENWZPx4tMI",
+            authDomain: "pinotp-d7ef5.firebaseapp.com",
+            databaseURL: "https://pinotp-d7ef5-default-rtdb.firebaseio.com",
+            projectId: "pinotp-d7ef5",
+            storageBucket: "pinotp-d7ef5.firebasestorage.app",
+            messagingSenderId: "708458917827",
+            appId: "1:708458917827:web:375de278577df0adcf9776"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const inventoryRef = ref(db, 'inventory');
+        const salesRef = ref(db, 'sales');
+
+        let inventoryData = {};
+        let cart = {};
+
+        onValue(inventoryRef, (snapshot) => {
+            inventoryData = snapshot.val() || {};
+            displayMenu();
+        });
+
+        function displayMenu() {
+            const container = document.getElementById('menuContainer');
+            container.innerHTML = '';
+            const grouped = {};
+            Object.entries(inventoryData).forEach(([key, item]) => {
+                const cat = item.category || 'General';
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push({key, ...item});
+            });
+            Object.keys(grouped).forEach(cat => {
+                const catDiv = document.createElement('div');
+                catDiv.innerHTML = `<h4>${cat}</h4>`;
+                const grid = document.createElement('div');
+                grid.className = 'item-grid';
+                grouped[cat].forEach(item => {
+                    if (item.qty <= 0) return;
+                    const hasDiscount = item.discount > 0;
+                    const finalPrice = hasDiscount ? (item.price - (item.price * item.discount / 100)).toFixed(2) : parseFloat(item.price).toFixed(2);
+                    const card = document.createElement('div');
+                    card.className = 'item-card';
+                    card.innerHTML = `
+                        <img src="${item.image_url || 'https://via.placeholder.com/200?text=' + item.name}" alt="${item.name}">
+                        <h5>${item.name}</h5>
+                        <p>R ${finalPrice}${hasDiscount ? ' <span class="discount-text">(from R' + item.price + ')</span>' : ''}</p>
+                        <button class="btn-sell" data-key="${item.key}">Add to Cart</button>
+                    `;
+                    card.querySelector('button').addEventListener('click', () => addToCart(item.key, item.name, finalPrice, item.image_url));
+                    grid.appendChild(card);
+                });
+                catDiv.appendChild(grid);
+                container.appendChild(catDiv);
+            });
+        }
+
+        function addToCart(key, name, price, image_url) {
+            if (!cart[key]) {
+                cart[key] = {name, price: parseFloat(price), qty: 0, image_url};
+            }
+            cart[key].qty += 1;
+            updateCartDisplay();
+        }
+
+        function updateCartDisplay() {
+            const list = document.getElementById('cartList');
+            list.innerHTML = '';
+            let total = 0;
+            Object.entries(cart).forEach(([key, item]) => {
+                const sub = item.price * item.qty;
+                total += sub;
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <img src="${item.image_url || 'https://via.placeholder.com/50?text=' + item.name}" alt="${item.name}">
+                    <div class="item-info">
+                        <strong>${item.name}</strong>
+                        <span>R ${item.price.toFixed(2)} x ${item.qty} = R ${sub.toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <button data-key="${key}" class="plus">+</button>
+                        <button data-key="${key}" class="minus">-</button>
+                        <button data-key="${key}" class="remove">×</button>
+                    </div>
+                `;
+                li.querySelector('.plus').addEventListener('click', () => {
+                    item.qty += 1;
+                    updateCartDisplay();
+                });
+                li.querySelector('.minus').addEventListener('click', () => {
+                    item.qty -= 1;
+                    if (item.qty <= 0) delete cart[key];
+                    updateCartDisplay();
+                });
+                li.querySelector('.remove').addEventListener('click', () => {
+                    delete cart[key];
+                    updateCartDisplay();
+                });
+                list.appendChild(li);
+            });
+            document.getElementById('cartTotal').innerText = total.toFixed(2);
+        }
+
+        document.getElementById('checkoutBtn').addEventListener('click', () => {
+            if (Object.keys(cart).length === 0) {
+                showToast('Your cart is empty.');
+                return;
+            }
+            let canCheckout = true;
+            let message = '';
+            Object.keys(cart).forEach(key => {
+                const avail = inventoryData[key] ? inventoryData[key].qty : 0;
+                if (avail < cart[key].qty) {
+                    canCheckout = false;
+                    message += `${cart[key].name} only has ${avail} available. `;
+                }
+            });
+            if (!canCheckout) {
+                showToast(message);
+                return;
+            }
+            // Simulate payment gateway
+            showToast('Redirecting to payment gateway... (Simulated)');
+            setTimeout(() => {
+                Object.entries(cart).forEach(([key, item]) => {
+                    const newQty = inventoryData[key].qty - item.qty;
+                    const itemRef = ref(db, `inventory/${key}`);
+                    update(itemRef, {qty: newQty});
+                    push(salesRef, {
+                        name: item.name,
+                        revenue: (item.price * item.qty).toFixed(2),
+                        timestamp: Date.now(),
+                        qty: item.qty
+                    });
+                });
+                cart = {};
+                updateCartDisplay();
+                showToast('Payment successful! Thank you for your order.');
+            }, 2000);
+        });
+
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.innerHTML = message;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+    </script>
+</body>
+</html>
