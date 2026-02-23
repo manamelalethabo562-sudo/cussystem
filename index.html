@@ -187,6 +187,13 @@
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
         @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+        .payment-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
+        .payment-card { background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; cursor: pointer; transition: var(--transition); }
+        .payment-card:hover { transform: translateY(-5px); }
+        .payment-card img { width: 80px; height: 80px; margin-bottom: 10px; }
+        .payment-card label { display: block; font-weight: 600; cursor: pointer; }
+        .payment-card input { display: none; }
+        .payment-card.selected { border: 2px solid var(--accent-color); box-shadow: 0 6px 15px rgba(0,184,148,0.2); }
     </style>
 </head>
 <body>
@@ -198,7 +205,7 @@
         <div class="header-flex">
             <div class="greeting">
                 <h1>Welcome to AuraPOS</h1>
-                <p style="color: var(--muted-text);">Browse our menu and place your order.</p>
+                <p style="color: var(--muted-text);">Browse our menu and place your order like at KFC or McDonald's.</p>
             </div>
         </div>
         <div class="card">
@@ -208,6 +215,21 @@
         <div class="card">
             <h3>Your Cart</h3>
             <ul id="cartList"></ul>
+            <h4>Payment Method</h4>
+            <div class="payment-options">
+                <div class="payment-card" data-value="cash">
+                    <img src="https://www.shutterstock.com/shutterstock/photos/1388821427/display_1500/stock-vector-pay-icon-set-flat-pay-icons-simple-modern-icons-about-bitcoin-money-pointing-invoice-1388821427.jpg" alt="Cash">
+                    <label>Cash</label>
+                </div>
+                <div class="payment-card" data-value="card">
+                    <img src="https://thumbs.dreamstime.com/b/flat-design-credit-card-icon-illustrating-modern-payment-tool-digital-transactions-light-blue-background-389305309.jpg" alt="Card">
+                    <label>Card</label>
+                </div>
+                <div class="payment-card" data-value="mobile">
+                    <img src="https://www.shutterstock.com/image-vector/digital-wallet-icon-vector-mobile-260nw-1161951670.jpg" alt="Mobile Wallet">
+                    <label>Mobile Wallet</label>
+                </div>
+            </div>
             <p style="font-weight: 700; font-size: 18px;">Total: R <span id="cartTotal">0.00</span></p>
             <button class="btn-pill" id="checkoutBtn">Checkout & Pay</button>
         </div>
@@ -233,6 +255,7 @@
 
         let inventoryData = {};
         let cart = {};
+        let selectedPayment = '';
 
         onValue(inventoryRef, (snapshot) => {
             inventoryData = snapshot.val() || {};
@@ -319,9 +342,22 @@
             document.getElementById('cartTotal').innerText = total.toFixed(2);
         }
 
+        // Payment selection
+        document.querySelectorAll('.payment-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.payment-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedPayment = card.dataset.value;
+            });
+        });
+
         document.getElementById('checkoutBtn').addEventListener('click', () => {
             if (Object.keys(cart).length === 0) {
                 showToast('Your cart is empty.');
+                return;
+            }
+            if (!selectedPayment) {
+                showToast('Please select a payment method.');
                 return;
             }
             let canCheckout = true;
@@ -337,25 +373,36 @@
                 showToast(message);
                 return;
             }
-            // Simulate payment gateway
-            showToast('Redirecting to payment gateway... (Simulated)');
-            setTimeout(() => {
-                Object.entries(cart).forEach(([key, item]) => {
-                    const newQty = inventoryData[key].qty - item.qty;
-                    const itemRef = ref(db, `inventory/${key}`);
-                    update(itemRef, {qty: newQty});
-                    push(salesRef, {
-                        name: item.name,
-                        revenue: (item.price * item.qty).toFixed(2),
-                        timestamp: Date.now(),
-                        qty: item.qty
-                    });
-                });
-                cart = {};
-                updateCartDisplay();
-                showToast('Payment successful! Thank you for your order.');
-            }, 2000);
+            if (selectedPayment === 'card' || selectedPayment === 'mobile') {
+                showToast('Redirecting to payment gateway... (Simulated)');
+                setTimeout(() => {
+                    processOrder();
+                    showToast('Payment successful! Thank you for your order.');
+                }, 2000);
+            } else { // cash
+                const orderNumber = Math.floor(100000 + Math.random() * 900000);
+                processOrder();
+                showToast(`Your order number is ${orderNumber}. Please pay at the counter.`);
+            }
         });
+
+        function processOrder() {
+            Object.entries(cart).forEach(([key, item]) => {
+                const newQty = inventoryData[key].qty - item.qty;
+                const itemRef = ref(db, `inventory/${key}`);
+                update(itemRef, {qty: newQty});
+                push(salesRef, {
+                    name: item.name,
+                    revenue: (item.price * item.qty).toFixed(2),
+                    timestamp: Date.now(),
+                    qty: item.qty
+                });
+            });
+            cart = {};
+            updateCartDisplay();
+            document.querySelectorAll('.payment-card').forEach(c => c.classList.remove('selected'));
+            selectedPayment = '';
+        }
 
         function showToast(message) {
             const toast = document.getElementById("toast");
